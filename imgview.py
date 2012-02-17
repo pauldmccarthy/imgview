@@ -36,13 +36,6 @@ class ImageFrame(wx.Frame):
     self.hdr = hdr
     self.img = img
 
-    self.create_img_panel()
-    self.on_x_slider(None)
-    self.on_y_slider(None)
-    self.on_z_slider(None)
-
-  def create_img_panel(self):
-
     self.panel = wx.Panel(self)
 
     self.dpi    = 100
@@ -53,7 +46,7 @@ class ImageFrame(wx.Frame):
       hspace=0.01,wspace=0.01,left=0.01,right=0.99,top=0.99,bottom=0.01)    
 
     self.zax = self.fig.add_subplot(1,3,1)
-    self.yax = self.fig.add_subplot(1,3,2)    
+    self.yax = self.fig.add_subplot(1,3,2)
     self.xax = self.fig.add_subplot(1,3,3)
 
     self.zax_slider = wx.Slider(
@@ -81,7 +74,6 @@ class ImageFrame(wx.Frame):
     self.Bind(wx.EVT_SLIDER, self.on_y_slider, self.yax_slider)    
     self.Bind(wx.EVT_SLIDER, self.on_x_slider, self.xax_slider)
 
-
     self.zax_text = wx.TextCtrl(self.panel, style=wx.TE_READONLY)
     self.yax_text = wx.TextCtrl(self.panel, style=wx.TE_READONLY)
     self.xax_text = wx.TextCtrl(self.panel, style=wx.TE_READONLY)
@@ -96,14 +88,22 @@ class ImageFrame(wx.Frame):
     self.dimbox.Add(self.yax_text, proportion=1)
     self.dimbox.Add(self.xax_text, proportion=1)
 
+    self.val_text = wx.TextCtrl(self.panel, style=wx.TE_READONLY)
+    self.canvas.mpl_connect('motion_notify_event', self.on_mouse)    
+
     self.layoutbox = wx.BoxSizer(wx.VERTICAL)
-    self.layoutbox.Add(self.canvas, proportion=9, flag=wx.EXPAND)
-    self.layoutbox.Add(self.slibox, proportion=1, flag=wx.EXPAND)
-    self.layoutbox.Add(self.dimbox, proportion=1, flag=wx.EXPAND)
-    
+    self.layoutbox.Add(self.canvas, proportion=1, flag=wx.EXPAND)
+    self.layoutbox.Add(self.slibox, proportion=0, flag=wx.EXPAND)
+    self.layoutbox.Add(self.dimbox, proportion=0, flag=wx.EXPAND)
+    self.layoutbox.Add(self.val_text, proportion=0, flag=wx.EXPAND)
+
     self.panel.SetSizer(self.layoutbox)
     self.layoutbox.Fit(self)
 
+
+    self.on_x_slider(None)
+    self.on_y_slider(None)
+    self.on_z_slider(None) 
 
   def _draw_ax(self, ax, data, xlim,ylim):
 
@@ -111,29 +111,75 @@ class ImageFrame(wx.Frame):
     ax.pcolormesh(data,cmap='gray', vmin=self.img.min(), vmax=self.img.max())
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.set_xlim((0,xlim-1))
-    ax.set_ylim((0,ylim-1))
+    ax.set_xlim((0,xlim))
+    ax.set_ylim((0,ylim))
+    self._draw_markers()
     self.canvas.draw()
 
+  def _draw_markers(self):
+
+    xval = self.xax_slider.GetValue() + 0.5
+    yval = self.yax_slider.GetValue() + 0.5
+    zval = self.zax_slider.GetValue() + 0.5
+
+    try: map(lambda l: l.remove(), self.xax.xmark)
+    except: pass
+    try: map(lambda l: l.remove(), self.xax.ymark)
+    except: pass
+    try: map(lambda l: l.remove(), self.yax.xmark)
+    except: pass
+    try: map(lambda l: l.remove(), self.yax.ymark)
+    except: pass
+    try: map(lambda l: l.remove(), self.zax.xmark)
+    except: pass
+    try: map(lambda l: l.remove(), self.zax.ymark)
+    except: pass
+
+    self.xax.xmark = self.xax.plot([ yval,yval],[-100, 100 ], 'r-')
+    self.xax.ymark = self.xax.plot([-100, 100 ],[ zval,zval], 'r-')
+    self.yax.xmark = self.yax.plot([ xval,xval],[-100, 100 ], 'r-')
+    self.yax.ymark = self.yax.plot([-100, 100 ],[zval, zval], 'r-')
+    self.zax.xmark = self.zax.plot([ xval,xval],[-100, 100 ], 'r-')
+    self.zax.ymark = self.zax.plot([-100, 100 ],[ yval,yval], 'r-')
+
+  def on_mouse(self, event):
+
+    i    = event.xdata
+    j    = event.ydata
+    data = None
+    val  = numpy.nan
+
+    if i            is None: return
+    if j            is None: return
+    if event.inaxes is None: return
+
+    if   event.inaxes == self.xax: data = self.xdata; (i,j) = (j,i)
+    elif event.inaxes == self.yax: data = self.ydata; (i,j) = (j,i)
+    elif event.inaxes == self.zax: data = self.zdata
+
+    val = data[i,j]
+
+    self.val_text.SetValue('(%u,%u): %0.6f' % (i, j, val))
+  
   def on_x_slider(self, event):
     
     val = self.xax_slider.GetValue()
     self.xax_text.SetValue('%u' % val)
-    data = self.img[val,:,:].transpose()
-    self._draw_ax(self.xax, data, self.hdr['yn'], self.hdr['zn'])
+    self.xdata = self.img[val,:,:].transpose()
+    self._draw_ax(self.xax, self.xdata, self.hdr['yn'], self.hdr['zn'])
     
   def on_y_slider(self, event):
 
     val = self.yax_slider.GetValue()
     self.yax_text.SetValue('%u' % val)
-    data = self.img[:,val,:].transpose()
-    self._draw_ax(self.yax, data, self.hdr['xn'], self.hdr['zn'])
+    self.ydata = self.img[:,val,:].transpose()
+    self._draw_ax(self.yax, self.ydata, self.hdr['xn'], self.hdr['zn'])
     
   def on_z_slider(self, event):
     val = self.zax_slider.GetValue()
     self.zax_text.SetValue('%u' % val)
-    data = self.img[:,:,val].transpose()
-    self._draw_ax(self.zax, data, self.hdr['xn'], self.hdr['yn'])
+    self.zdata = self.img[:,:,val].transpose()
+    self._draw_ax(self.zax, self.zdata, self.hdr['xn'], self.hdr['yn'])
 
 if __name__ == '__main__':
 

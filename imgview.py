@@ -144,8 +144,8 @@ class ImageFrame(wx.Frame):
 
   def on_mouse(self, event):
 
-    i    = event.xdata
-    j    = event.ydata
+    i    = event.ydata
+    j    = event.xdata
     data = None
     val  = numpy.nan
 
@@ -153,8 +153,8 @@ class ImageFrame(wx.Frame):
     if j            is None: return
     if event.inaxes is None: return
 
-    if   event.inaxes == self.xax: data = self.xdata; (i,j) = (j,i)
-    elif event.inaxes == self.yax: data = self.ydata; (i,j) = (j,i)
+    if   event.inaxes == self.xax: data = self.xdata
+    elif event.inaxes == self.yax: data = self.ydata
     elif event.inaxes == self.zax: data = self.zdata
 
     val = data[i,j]

@@ -135,12 +135,16 @@ class ImageFrame(wx.Frame):
     try: map(lambda l: l.remove(), self.zax.ymark)
     except: pass
 
-    self.xax.xmark = self.xax.plot([ yval,yval],[-100, 100 ], 'r-')
-    self.xax.ymark = self.xax.plot([-100, 100 ],[ zval,zval], 'r-')
-    self.yax.xmark = self.yax.plot([ xval,xval],[-100, 100 ], 'r-')
-    self.yax.ymark = self.yax.plot([-100, 100 ],[zval, zval], 'r-')
-    self.zax.xmark = self.zax.plot([ xval,xval],[-100, 100 ], 'r-')
-    self.zax.ymark = self.zax.plot([-100, 100 ],[ yval,yval], 'r-')
+    xlim = self.hdr['xn']
+    ylim = self.hdr['yn']
+    zlim = self.hdr['zn']
+
+    self.xax.xmark = self.xax.plot([yval, yval],[0,    zlim], 'r-')
+    self.xax.ymark = self.xax.plot([0,    ylim],[zval, zval], 'r-')
+    self.yax.xmark = self.yax.plot([xval, xval],[0,    zlim], 'r-')
+    self.yax.ymark = self.yax.plot([0,    xlim],[zval, zval], 'r-')
+    self.zax.xmark = self.zax.plot([xval, xval],[0,    ylim], 'r-')
+    self.zax.ymark = self.zax.plot([0,    xlim],[yval, yval], 'r-')
 
   def on_mouse(self, event):
 

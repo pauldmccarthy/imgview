@@ -14,7 +14,10 @@ import sys
 
 import wx
 import numpy
+import numpy.ma as ma
+
 import matplotlib
+import matplotlib.cm as cm
 
 import loadimg
 
@@ -107,6 +110,10 @@ class ImageFrame(wx.Frame):
 
   def _draw_ax(self, ax, data, xlim,ylim):
 
+    cmap = cm.get_cmap('gray')
+    cmap.set_bad(  'k',alpha=1.0)
+    cmap.set_under('k',alpha=1.0)
+
     ax.clear()
     ax.pcolormesh(data,cmap='gray', vmin=self.img.min(), vmax=self.img.max())
     ax.set_xticks([])
@@ -187,13 +194,17 @@ class ImageFrame(wx.Frame):
 
 if __name__ == '__main__':
 
-  if len(sys.argv) != 2:
-    print 'usage: imgview.py filename'
+  if len(sys.argv) not in [2,3]:
+    print 'usage: imgview.py filename [threshold]'
     exit()
 
-  imgfile = sys.argv[1]
+  imgfile   = sys.argv[1]
+  threshold = (len(sys.argv) == 3) and float(sys.argv[2]) or None
 
   (img,hdr) = loadimg.loadimg(imgfile)
+
+  if threshold:
+    img = ma.masked_less_equal(img, threshold)
 
   app = wx.PySimpleApp()
   app.frame = ImageFrame(imgfile, hdr, img)

@@ -203,6 +203,8 @@ if __name__ == '__main__':
 
   (img,hdr) = loadimg.loadimg(imgfile)
 
+  img = ma.masked_invalid(img)
+
   if threshold:
     img = ma.masked_less_equal(img, threshold)
 
